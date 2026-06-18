@@ -14,7 +14,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Justin Traglia",
     author_email="jtraglia@pm.me",
-    url="https://github.com/jtraglia/ethspecify",
+    url="https://github.com/ethereum/ethspecify",
     packages=find_packages(),
     entry_points={
         "console_scripts": [

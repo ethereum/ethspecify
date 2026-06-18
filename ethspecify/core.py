@@ -237,7 +237,7 @@ def diff(a_name, a_content, b_name, b_content):
 
 @functools.lru_cache()
 def get_pyspec(version="nightly"):
-    url = f"https://raw.githubusercontent.com/jtraglia/ethspecify/main/pyspec/{version}/pyspec.json"
+    url = f"https://raw.githubusercontent.com/ethereum/ethspecify/main/pyspec/{version}/pyspec.json"
     response = requests.get(url)
     response.raise_for_status()
     return response.json()
