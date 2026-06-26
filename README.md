@@ -252,12 +252,20 @@ def is_fully_withdrawable_validator(validator: Validator, balance: Gwei, epoch: 
 
 ### `link`
 
-This style displays an ethspec.tools link to the specification
-item.
+This style displays a link to the specification item's source on
+GitHub. For a tagged `version`, the link uses the tag as the ref:
 
 ```
-<spec fn="apply_pending_deposit" fork="electra" style="link" hash="83ee9126">
-https://ethspec.tools/#specs/v1.7.0-alpha.1/functions-apply_pending_deposit-electra
+<spec ssz_object="BeaconState" fork="gloas" version="v1.7.0-alpha.11" style="link">
+https://github.com/ethereum/consensus-specs/blob/v1.7.0-alpha.11/specs/gloas/beacon-chain.md?plain=1#L411-L468
+</spec>
+```
+
+For `nightly`, the link uses a commit permalink instead of the tag:
+
+```
+<spec fn="apply_pending_deposit" fork="electra" style="link">
+https://github.com/ethereum/consensus-specs/blob/99cc40f9317a15ea185690cee6095297fc571dda/specs/electra/beacon-chain.md?plain=1#L960-L975
 </spec>
 ```
 

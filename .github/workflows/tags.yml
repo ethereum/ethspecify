@@ -90,6 +90,9 @@ jobs:
             # Create tag directory and copy files
             mkdir -p "../pyspec/$tag"
             cp pyspec.json "../pyspec/$tag/"
+
+            # Build the source location map (links.json) for this tag
+            python3 ../scripts/generate_links.py . "../pyspec/$tag/links.json"
           done
 
       - name: Commit and Push Changes

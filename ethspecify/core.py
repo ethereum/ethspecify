@@ -243,6 +243,24 @@ def get_pyspec(version="nightly"):
     return response.json()
 
 
+@functools.lru_cache()
+def get_links(version="nightly"):
+    """
+    Fetch the source location map (links.json) for a given version.
+
+    Returns a dict of the form {"commit": <sha>, "items": {name: {fork: {...}}}}
+    or None if no links.json is available for this version (e.g. older tags that
+    predate link support).
+    """
+    url = f"https://raw.githubusercontent.com/ethereum/ethspecify/main/pyspec/{version}/links.json"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.json()
+    except (requests.RequestException, ValueError):
+        return None
+
+
 def get_previous_forks(fork, version="nightly"):
     pyspec = get_pyspec(version)
     config_vars = pyspec["mainnet"][fork]["config_vars"]
@@ -563,29 +581,115 @@ def get_spec_item(attributes, config=None):
         raise Exception("invalid style type")
 
 
-def build_spec_link(attributes, fork, version):
-    base = f"https://ethspec.tools/#specs/{version}"
+GITHUB_SPEC_REPO = "https://github.com/ethereum/consensus-specs"
+
+
+def _get_link_item_name(attributes):
+    """
+    Return the spec item name referenced by a tag, or None if the tag does not
+    reference a linkable item.
+    """
+    if "function" in attributes and "fn" in attributes:
+        raise Exception("cannot contain 'function' and 'fn'")
     if "function" in attributes or "fn" in attributes:
-        if "function" in attributes and "fn" in attributes:
-            raise Exception(f"cannot contain 'function' and 'fn'")
-        function_name = attributes.get("function", attributes.get("fn"))
-        return f"{base}/functions-{function_name}-{fork}"
+        return attributes.get("function", attributes.get("fn"))
     if "constant_var" in attributes:
-        return f"{base}/constant_vars-{attributes['constant_var']}-{fork}"
+        return attributes["constant_var"]
     if "preset_var" in attributes:
-        return f"{base}/preset_vars-{attributes['preset_var']}-{fork}"
+        return attributes["preset_var"]
     if "config_var" in attributes:
-        return f"{base}/config_vars-{attributes['config_var']}-{fork}"
+        return attributes["config_var"]
     if "custom_type" in attributes:
-        return f"{base}/custom_types-{attributes['custom_type']}-{fork}"
+        return attributes["custom_type"]
+    if "ssz_object" in attributes and "container" in attributes:
+        raise Exception("cannot contain 'ssz_object' and 'container'")
     if "ssz_object" in attributes or "container" in attributes:
-        if "ssz_object" in attributes and "container" in attributes:
-            raise Exception(f"cannot contain 'ssz_object' and 'container'")
-        object_name = attributes.get("ssz_object", attributes.get("container"))
-        return f"{base}/ssz_objects-{object_name}-{fork}"
+        return attributes.get("ssz_object", attributes.get("container"))
     if "dataclass" in attributes:
-        return f"{base}/dataclasses-{attributes['dataclass']}-{fork}"
+        return attributes["dataclass"]
     return None
+
+
+def build_spec_link(attributes, fork, version):
+    """
+    Build a GitHub link to the source of the referenced spec item, or None if it
+    can't be resolved (unknown item, or no links.json for this version).
+    Tagged versions link to the tag; nightly links to a commit permalink.
+    """
+    item_name = _get_link_item_name(attributes)
+    if item_name is None:
+        return None
+
+    links = get_links(version)
+    if not links:
+        return None
+
+    item_forks = links.get("items", {}).get(item_name)
+    if not item_forks:
+        return None
+
+    location = _resolve_location(item_forks, fork, version)
+    if location is None:
+        return None
+
+    ref = version if version != "nightly" else links.get("commit")
+    if not ref:
+        return None
+
+    start = location["start"]
+    end = location["end"]
+
+    # For function line selections, narrow the anchor to the requested lines.
+    if ("function" in attributes or "fn" in attributes) and "lines" in attributes:
+        sub = _apply_line_subrange(start, end, attributes["lines"])
+        if sub is not None:
+            start, end = sub
+
+    anchor = f"L{start}" if start == end else f"L{start}-L{end}"
+    return f"{GITHUB_SPEC_REPO}/blob/{ref}/{location['file']}?plain=1#{anchor}"
+
+
+def _resolve_location(item_forks, fork, version):
+    """
+    Find the source location for an item at the given fork. If the item is not
+    (re)defined in that fork, walk back through previous forks to the most recent
+    one that defines it (matching how the spec inherits unchanged items).
+    """
+    if fork in item_forks:
+        return item_forks[fork]
+    try:
+        previous_forks = get_previous_forks(fork, version)
+    except Exception:
+        return None
+    for prev in previous_forks:
+        if prev in item_forks:
+            return item_forks[prev]
+    return None
+
+
+def _apply_line_subrange(start, end, lines_attr):
+    """
+    Narrow a [start, end] line range using a tag's `lines` attribute (1-indexed,
+    relative to the item). Returns (new_start, new_end) or None if invalid.
+    """
+    try:
+        parts = lines_attr.split("-")
+        if len(parts) == 1:
+            s = e = int(parts[0])
+        elif len(parts) == 2:
+            s = int(parts[0])
+            e = int(parts[1])
+        else:
+            return None
+    except ValueError:
+        return None
+
+    total = end - start + 1
+    s = max(1, min(s, total))
+    e = max(1, min(e, total))
+    if s > e:
+        return None
+    return start + s - 1, start + e - 1
 
 
 def extract_attributes(tag):
