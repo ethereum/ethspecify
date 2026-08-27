@@ -1,15 +1,16 @@
 diff --git a/pysetup/generate_specs.py b/pysetup/generate_specs.py
-index c5f6ed9..c219a20 100644
+index 59b12b15b..ef07a2fc8 100644
 --- a/pysetup/generate_specs.py
 +++ b/pysetup/generate_specs.py
-@@ -1,5 +1,6 @@
+@@ -1,6 +1,7 @@
  import argparse
+ import ast
  import copy
 +import json
  import sys
  from collections import OrderedDict
  from collections.abc import Sequence
-@@ -22,6 +23,8 @@ from pysetup.md_to_spec import MarkdownToSpec
+@@ -23,6 +24,8 @@ from pysetup.md_to_spec import MarkdownToSpec
  from pysetup.spec_builders import spec_builders
  from pysetup.typing import BuildTarget, SpecObject  # type: ignore[attr-defined]
  
@@ -18,7 +19,7 @@ index c5f6ed9..c219a20 100644
  
  def get_spec(
      file_name: Path,
-@@ -89,6 +92,14 @@ def build_spec(
+@@ -90,6 +93,14 @@ def build_spec(
      spec_object = all_specs[0]
      for value in all_specs[1:]:
          spec_object = combine_spec_objects(spec_object, value)
@@ -33,7 +34,7 @@ index c5f6ed9..c219a20 100644
      spec_object = finalized_spec_object(spec_object)
  
      class_objects = {**spec_object.ssz_objects, **spec_object.dataclasses}
-@@ -218,6 +229,10 @@ def generate_fork_specs(
+@@ -268,6 +279,10 @@ def generate_fork_specs(
      if verbose:
          print(f"  Wrote: {init_file}")
  
