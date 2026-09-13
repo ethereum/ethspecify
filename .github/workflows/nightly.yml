@@ -30,7 +30,7 @@ jobs:
       - name: Build Pyspec JSON
         run: |
           cd consensus-specs
-          make _pyspec
+          make build
           cp pyspec.json ../pyspec/nightly/pyspec.json
 
       - name: Build Links JSON

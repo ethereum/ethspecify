@@ -85,7 +85,7 @@ jobs:
             git apply ../write_pyspec_dict.patch
 
             # Build pyspec
-            make _pyspec
+            make build
 
             # Create tag directory and copy files
             mkdir -p "../pyspec/$tag"
