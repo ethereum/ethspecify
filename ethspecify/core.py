@@ -909,7 +909,7 @@ def replace_spec_tags(file_path, config=None):
             # For full/diff styles, rebuild as a long (paired) tag.
             new_opening = rebuild_opening_tag(attributes, hash_value)
             spec_content = get_spec_item(attributes, config)
-            prefix = content[:match.start()].splitlines()[-1]
+            prefix = content[:match.start()].rsplit('\n', 1)[-1]
             prefixed_spec = "\n".join(
                 f"{prefix}{line}" if line.rstrip() else prefix.rstrip()
                 for line in spec_content.split("\n")
